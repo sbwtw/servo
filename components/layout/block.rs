@@ -325,7 +325,7 @@ impl CandidateBSizeIterator {
                 MaybeAuto::Specified(block_container_block_size.scale_by(percent))
             }
             (LengthOrPercentageOrAuto::Calc(calc), Some(block_container_block_size)) => {
-                MaybeAuto::Specified(calc.length() + block_container_block_size.scale_by(calc.percentage()))
+                MaybeAuto::Specified(calc.calc(Some(block_container_block_size)))
             }
             (LengthOrPercentageOrAuto::Percentage(_), None) |
             (LengthOrPercentageOrAuto::Auto, _) |
@@ -337,7 +337,7 @@ impl CandidateBSizeIterator {
                 Some(block_container_block_size.scale_by(percent))
             }
             (LengthOrPercentageOrNone::Calc(calc), Some(block_container_block_size)) => {
-                Some(block_container_block_size.scale_by(calc.percentage()) + calc.length())
+                Some(calc.calc(Some(block_container_block_size)))
             }
             (LengthOrPercentageOrNone::Calc(_), _) |
             (LengthOrPercentageOrNone::Percentage(_), None) |
@@ -348,10 +348,9 @@ impl CandidateBSizeIterator {
             (LengthOrPercentage::Percentage(percent), Some(block_container_block_size)) => {
                 block_container_block_size.scale_by(percent)
             }
-            (LengthOrPercentage::Calc(calc), Some(block_container_block_size)) => {
-                calc.length() + block_container_block_size.scale_by(calc.percentage())
+            (LengthOrPercentage::Calc(calc), block_container_block_size) => {
+                calc.calc(block_container_block_size)
             }
-            (LengthOrPercentage::Calc(calc), None) => calc.length(),
             (LengthOrPercentage::Percentage(_), None) => Au(0),
             (LengthOrPercentage::Length(length), _) => length,
         };
@@ -1169,7 +1168,7 @@ impl BlockFlow {
 
         match (content_block_size, containing_block_size) {
             (LengthOrPercentageOrAuto::Calc(calc), Some(container_size)) => {
-                Some(container_size.scale_by(calc.percentage()) + calc.length())
+                Some(calc.calc(Some(container_size)))
             }
             (LengthOrPercentageOrAuto::Length(length), _) => Some(length),
             (LengthOrPercentageOrAuto::Percentage(percent), Some(container_size)) => {
@@ -1251,8 +1250,6 @@ impl BlockFlow {
             let available_block_size = containing_block_block_size -
                 self.fragment.border_padding.block_start_end();
             if self.fragment.is_replaced() {
-                // Calculate used value of block-size just like we do for inline replaced elements.
-                // TODO: Pass in the containing block block-size when Fragment's
                 // assign-block-size can handle it correctly.
                 self.fragment.assign_replaced_block_size_if_necessary();
                 // TODO: Right now, this content block-size value includes the
